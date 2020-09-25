@@ -2,6 +2,10 @@ import kotlin.math.exp
 
 internal class Expression(private var expr: String) {
 
+    init {
+        expr = expr.replace(" ", "")
+    }
+
     val isNotNumber: Boolean
         get() = expr.toDoubleOrNull() == null
 

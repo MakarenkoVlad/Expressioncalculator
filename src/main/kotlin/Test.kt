@@ -3,9 +3,12 @@ private fun main() {
         setCalculationCallback {
             println(it)
         }
+        setExceptionCallback {
+            println(it)
+        }
     }
 
-    println(calculator.calculate("(2+2)*3+(10+30+(20/10))"))
+    println(calculator.calculate("(2 +2)*3+(10+30+(20/10))"))
     println()
     println(calculator.calculate("(2+2)*3+(10+*30+(20/10))"))
 }
