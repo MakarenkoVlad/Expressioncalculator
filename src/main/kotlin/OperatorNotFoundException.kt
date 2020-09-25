@@ -1,0 +1,1 @@
+class OperatorNotFoundException: Exception("Operator not found!")
