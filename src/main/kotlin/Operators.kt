@@ -1,5 +1,6 @@
 internal object Operators : Iterable<String> {
     private val operators = listOf("""\*""", """\/""", """\+""", """\-""")
+    val pureOperators = listOf("""*""", """/""", """+""", """-""")
     private val operatorFuncs = mapOf(
         operators[0] to {a: Double, b: Double -> a * b},
         operators[1] to {a: Double, b: Double -> a / b},
@@ -9,6 +10,7 @@ internal object Operators : Iterable<String> {
 
     override fun iterator(): Iterator<String> = operators.iterator()
 
+    @Throws(OperatorNotFoundException::class)
     fun calculate(operator: String, firstNum: Double, secondNum: Double): Double {
         val operatorFun = operatorFuncs[operator]
         if (operatorFun == null)

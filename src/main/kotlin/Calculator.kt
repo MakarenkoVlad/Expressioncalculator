@@ -14,8 +14,7 @@ class Calculator private constructor(
     }
 
     fun calculate(expr: String): String {
-
-        val calculatedExpression = Expression(expr)
+        val calculatedExpression = RegularExpression(expr) as Expression
 
         return try {
             while (calculatedExpression.isNotNumber) {
