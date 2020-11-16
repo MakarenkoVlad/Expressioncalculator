@@ -1,17 +1,7 @@
-class Calculator private constructor(
-    private val calculationCallback: ((expr: String) -> Unit)?,
-    private val exceptionCallback: ((exception: Exception) -> Unit)?
+open class Calculator(
+    protected val calculationCallback: ((expr: String) -> Unit)? = null,
+    protected val exceptionCallback: ((exception: Exception) -> Unit)? = null
 ) {
-
-    companion object {
-        fun build(setFieldsAndLambdas: Builder.() -> Unit): Calculator {
-            val builder = Builder()
-
-            builder.setFieldsAndLambdas()
-
-            return builder.build()
-        }
-    }
 
     fun calculate(expr: String): String {
         val calculatedExpression = RegularExpression(expr) as Expression
@@ -36,23 +26,5 @@ class Calculator private constructor(
                 ""
             }
         }
-    }
-
-    class Builder {
-
-        private var calculationCallback: ((expr: String) -> Unit)? = null
-        private var exceptionCallback: ((exception: Exception) -> Unit)? = null
-
-        fun setCalculationCallback(callback: (expr: String) -> Unit): Builder {
-            calculationCallback = callback
-            return this
-        }
-
-        fun setExceptionCallback(callback: (exception: Exception) -> Unit): Builder {
-            exceptionCallback = callback
-            return this
-        }
-
-        fun build(): Calculator = Calculator(calculationCallback, exceptionCallback)
     }
 }

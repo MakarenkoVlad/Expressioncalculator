@@ -36,6 +36,8 @@ internal class RegularExpression(private var expr: String) : Expression {
                     expr = expr
                         .removeRange(startingFrom + lastIndex, startingFrom + lastIndex + 1)
                         .removeRange(startingFrom, startingFrom + firstIndex + 1)
+                    if (value[1] == '-')
+                        value = value.replace("[()]".toRegex(), "")
                 }
                 0 -> {
                     expr = expr
@@ -52,13 +54,26 @@ internal class RegularExpression(private var expr: String) : Expression {
 
             var (value, firstIndex, lastIndex) = decomposeMatchResult(bracketsMatchResult)
 
-            // If operators count = 1 -> remove brackets
+            // If operators count < 1 -> remove brackets
             when (operatorRegex.findAll(value).count()) {
+                2 -> {
+                    val minusRegex = Regex("""(^|\+|\-|\*|\/)-(\d+\.\d+|\d+|\w\w|\w)""")
+                    if (minusRegex.find(value) != null) {
+                        expr = StringBuilder(expr)
+                            .replace(firstIndex, firstIndex + 1, "")
+                            .replace(lastIndex - 1, lastIndex, "")
+                            .toString()
+
+                        value = value.replace("[()]".toRegex(), "")
+                    }
+                }
                 1 -> {
                     expr = StringBuilder(expr)
                         .replace(firstIndex, firstIndex + 1, "")
                         .replace(lastIndex - 1, lastIndex, "")
                         .toString()
+                    if (value[1] == '-')
+                        value = value.replace("[()]".toRegex(), "")
                 }
                 0 -> {
                     expr = StringBuilder(expr)
