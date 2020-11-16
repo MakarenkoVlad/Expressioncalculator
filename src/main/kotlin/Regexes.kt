@@ -3,6 +3,7 @@ object Regexes {
     * Regex which could find bracket with biggest priority
     */
     val bracket = Regex("""\([^\(^\)]+\)""")
+    val bracketWithUnary = Regex("""\w+\([^\(^\)]+\)""")
 
     /**
      * Regex must be updated if will be found constant longer than 2

@@ -11,3 +11,15 @@ fun String.operandToDouble(): Double {
     val result = toDoubleOrNull()
     return result ?: Constants[this] ?: throw ConstantNotFoundException()
 }
+
+val String.isOperandOrDouble: Boolean
+    get() {
+        val result = toDoubleOrNull()
+        return result ?: Constants[this] != null
+    }
+
+fun String.replaceFirst(oldValue: String, newValue: String, startingFrom: Int): String {
+    val secondPartOfString = substring(startingFrom)
+    val firstPartOfString = substring(0, startingFrom)
+    return firstPartOfString + secondPartOfString.replaceFirst(oldValue, newValue)
+}

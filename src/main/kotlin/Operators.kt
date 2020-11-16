@@ -1,22 +1,33 @@
 internal object Operators : Iterable<String> {
-    private val operators = listOf("""\*""", """\/""", """\+""", """\-""")
-    val pureOperators = listOf("""*""", """/""", """+""", """-""")
-    private val operatorFuncs = mapOf(
-        operators[0] to {a: Double, b: Double -> a * b},
-        operators[1] to {a: Double, b: Double -> a / b},
-        operators[2] to {a: Double, b: Double -> a + b},
-        operators[3] to {a: Double, b: Double -> a - b}
+    private val binaryOperators = listOf("""\*""", """\/""", """\+""", """\-""")
+    val pureBinaryOperators = listOf("""*""", """/""", """+""", """-""")
+    private val binaryOperatorFuncs = mapOf(
+        binaryOperators[0] to { a: Double, b: Double -> a * b },
+        binaryOperators[1] to { a: Double, b: Double -> a / b },
+        binaryOperators[2] to { a: Double, b: Double -> a + b },
+        binaryOperators[3] to { a: Double, b: Double -> a - b }
+    )
+    private val unaryOperatorFuncs = mapOf(
+        "sin" to Math::sin,
+        "cos" to Math::cos,
+        "tan" to Math::tan
     )
 
-    override fun iterator(): Iterator<String> = operators.iterator()
+    override fun iterator(): Iterator<String> = binaryOperators.iterator()
 
-    @Throws(OperatorNotFoundException::class)
+    /**
+     * Calculates binary expression
+     * @throws OperatorNotFoundException - if operator not found
+     */
     fun calculate(operator: String, firstNum: Double, secondNum: Double): Double {
-        val operatorFun = operatorFuncs[operator]
-        if (operatorFun == null)
-            throw OperatorNotFoundException()
-        else{
-            return operatorFun(firstNum, secondNum)
-        }
+        return binaryOperatorFuncs[operator]?.invoke(firstNum, secondNum) ?: throw OperatorNotFoundException()
+    }
+
+    /**
+     * Calculates unary expression
+     * @throws OperatorNotFoundException - if operator not found
+     */
+    fun calculate(operator: String, number: Double): Double {
+        return unaryOperatorFuncs[operator]?.invoke(number) ?: throw OperatorNotFoundException()
     }
 }

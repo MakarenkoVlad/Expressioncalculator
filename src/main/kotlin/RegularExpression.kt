@@ -1,6 +1,9 @@
+import utils.isOperandOrDouble
 import utils.operandToDouble
+import utils.replaceFirst
 
-internal class RegularExpression(private var expr: String): Expression {
+internal class RegularExpression(private var expr: String) : Expression {
+    private val operatorRegex = Regexes.getOperators()
 
     init {
         expr = expr.replace(" ", "")
@@ -17,63 +20,128 @@ internal class RegularExpression(private var expr: String): Expression {
      * @throws OperatorNotFoundException when in expression no operators
      * @return simplified part of expression
      */
-    @Throws(ExpressionIsNotSimplifiedException::class, OperatorNotFoundException::class)
     override fun simplifyExpression(): String {
         val bracketsRegex = Regexes.bracket
+        val bracketsWithUnaryRegex = Regexes.bracketWithUnary
         val bracketsMatchResult = bracketsRegex.find(expr)
 
-        return if (bracketsMatchResult != null) {
-            val value = bracketsMatchResult.value
-            val firstIndex = bracketsMatchResult.range.first
-            val lastIndex = bracketsMatchResult.range.last
+        val bracketsWithUnaryMatchResult = bracketsWithUnaryRegex.find(expr)
+        if (bracketsWithUnaryMatchResult != null) {
+            val matchResult = bracketsRegex.find(bracketsWithUnaryMatchResult.value)!!
+            var (value, firstIndex, lastIndex) = decomposeMatchResult(matchResult)
+            val startingFrom = bracketsWithUnaryMatchResult.range.first
+            // If operators count = 1 -> remove brackets
+            when (operatorRegex.findAll(value).count()) {
+                1 -> {
+                    expr = expr
+                        .removeRange(startingFrom + lastIndex, startingFrom + lastIndex + 1)
+                        .removeRange(startingFrom, startingFrom + firstIndex + 1)
+                }
+                0 -> {
+                    expr = expr
+                        .removeRange(startingFrom + lastIndex, startingFrom + lastIndex + 1)
+                        .removeRange(startingFrom, startingFrom + firstIndex + 1)
 
-            val operatorRegex = Regexes.getOperators()
+                    value = value.replace("[()]".toRegex(), "")
+                }
+            }
+            val operator =
+                bracketsWithUnaryMatchResult.value.replace("""(\)|\(|\d|\.)""".toRegex(), "")
+            return simplifyExpressionWithoutBrackets(startingFrom, value) { Operators.calculate(operator, it) }
+        } else if (bracketsMatchResult != null) {
+
+            var (value, firstIndex, lastIndex) = decomposeMatchResult(bracketsMatchResult)
 
             // If operators count = 1 -> remove brackets
-            if (operatorRegex.findAll(value).count() == 1){
-                expr = StringBuilder(expr)
-                    .replace(firstIndex, firstIndex + 1, "")
-                    .replace(lastIndex-1, lastIndex, "")
-                    .toString()
-            }
+            when (operatorRegex.findAll(value).count()) {
+                1 -> {
+                    expr = StringBuilder(expr)
+                        .replace(firstIndex, firstIndex + 1, "")
+                        .replace(lastIndex - 1, lastIndex, "")
+                        .toString()
+                }
+                0 -> {
+                    expr = StringBuilder(expr)
+                        .replace(firstIndex, firstIndex + 1, "")
+                        .replace(lastIndex - 1, lastIndex, "")
+                        .toString()
 
-            simplifyExpressionWithoutBrackets(value)
+                    value = value.replace("[()]".toRegex(), "")
+                }
+            }
+//            println(expr)
+
+            return simplifyExpressionWithoutBrackets(firstIndex, value)
         } else {
-            simplifyExpressionWithoutBrackets(expr)
+            return simplifyExpressionWithoutBrackets(0, expr)
         }
     }
 
     /**
-     * Simplifies expression without brackets
+     * @return first is value, second is first index, third is last index
+     */
+    private fun decomposeMatchResult(matchResult: MatchResult): Triple<String, Int, Int> {
+        return Triple(matchResult.value, matchResult.range.first, matchResult.range.last)
+    }
+
+    /**
+     * Simplifies given expression without brackets and replaces that expression in class expression
      * @throws ExpressionIsNotSimplifiedException when expression cannot be simplified
      * @throws OperatorNotFoundException when in expression no operators
      * @param exprWithoutBrackets expression that do not contain brackets
      * @return simplified part of expression
      */
-    @Throws(ExpressionIsNotSimplifiedException::class, OperatorNotFoundException::class)
-    private fun simplifyExpressionWithoutBrackets(exprWithoutBrackets: String): String {
+    private fun simplifyExpressionWithoutBrackets(
+        position: Int,
+        exprWithoutBrackets: String,
+        onPostCalculate: ((Double) -> Double)? = null
+    ): String {
         Operators.forEachIndexed { index, operator ->
             val operatorRegex = Regexes.getOperator(operator)
             operatorRegex.find(exprWithoutBrackets)?.let { matchResult ->
                 val value = matchResult.value
-                simplifyBinaryExpression(value, index, operator)
+                simplifyBinaryExpression(position, value, index, operator, onPostCalculate)
                 return expr
             }
         }
-        throw ExpressionIsNotSimplifiedException()
+
+        if (exprWithoutBrackets.isOperandOrDouble) {
+            return simplifyUnaryExpression(position, exprWithoutBrackets, onPostCalculate)
+        } else {
+            throw ExpressionIsNotSimplifiedException()
+        }
+    }
+
+    private fun simplifyUnaryExpression(
+        position: Int,
+        exprWithoutBrackets: String,
+        onPostCalculate: ((Double) -> Double)?
+    ): String {
+        val value = (onPostCalculate?.invoke(exprWithoutBrackets.operandToDouble())
+            ?: exprWithoutBrackets.toDouble()).toString()
+        return expr.replaceFirst(exprWithoutBrackets, value, position).also {
+            expr = it
+        }
     }
 
     /**
      * Simplifies expression with two operands
      */
     private fun simplifyBinaryExpression(
+        position: Int,
         expression: String,
         operatorIndexInOperators: Int,
-        operator: String
+        operator: String,
+        onPostCalculate: ((Double) -> Double)? = null
     ) {
-        val (firstNumber, secondNumber) = expression.split(Operators.pureOperators[operatorIndexInOperators])
+        val (firstNumber, secondNumber) = expression.split(Operators.pureBinaryOperators[operatorIndexInOperators])
             .map { it.operandToDouble() }
-        expr = expr.replaceFirst(expression, Operators.calculate(operator, firstNumber, secondNumber).toString())
+        val temporaryResult = Operators.calculate(operator, firstNumber, secondNumber)
+        expr = expr.replaceFirst(
+            expression,
+            (onPostCalculate?.invoke(temporaryResult) ?: temporaryResult).toString(),
+            position
+        )
     }
 
     override fun toString(): String {
