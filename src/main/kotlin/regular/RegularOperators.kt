@@ -1,4 +1,8 @@
-internal object Operators : Iterable<String> {
+package regular
+
+import exceptions.OperatorNotFoundException
+
+internal object RegularOperators : Iterable<String> {
     private val binaryOperators = listOf("""\*""", """\/""", """\+""", """\-""")
     val pureBinaryOperators = listOf("""*""", """/""", """+""", """-""")
     private val binaryOperatorFuncs = mapOf(

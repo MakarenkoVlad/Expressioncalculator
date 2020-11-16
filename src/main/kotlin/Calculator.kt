@@ -1,18 +1,19 @@
+import exceptions.ExpressionIsNotSimplifiedException
+import exceptions.OperatorNotFoundException
+
 open class Calculator(
     protected val calculationCallback: ((expr: String) -> Unit)? = null,
     protected val exceptionCallback: ((exception: Exception) -> Unit)? = null
 ) {
 
-    fun calculate(expr: String): String {
-        val calculatedExpression = RegularExpression(expr) as Expression
-
+    fun calculate(expr: Expression): String {
         return try {
-            while (calculatedExpression.isNotNumber) {
-                calculatedExpression.simplifyExpression()
-                calculationCallback?.invoke(calculatedExpression.toString())
+            while (expr.isExpression) {
+                expr.simplifyExpression()
+                calculationCallback?.invoke(expr.toString())
             }
 
-            calculatedExpression.toString()
+            expr.toString()
         } catch (e: Exception) {
 
             if (exceptionCallback == null) {

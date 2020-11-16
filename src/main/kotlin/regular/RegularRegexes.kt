@@ -1,4 +1,6 @@
-object Regexes {
+package regular
+
+object RegularRegexes {
     /**
     * Regex which could find bracket with biggest priority
     */

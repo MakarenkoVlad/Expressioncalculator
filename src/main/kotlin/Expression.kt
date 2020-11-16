@@ -12,5 +12,5 @@ interface Expression {
     /**
      * Tells you is that expression is number
      */
-    val isNotNumber: Boolean
+    val isExpression: Boolean
 }

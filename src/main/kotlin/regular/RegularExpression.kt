@@ -1,16 +1,17 @@
+package regular
+
+import BaseExpression
+import exceptions.ExpressionIsNotSimplifiedException
 import utils.isOperandOrDouble
 import utils.operandToDouble
 import utils.replaceFirst
 
-internal class RegularExpression(private var expr: String) : Expression {
-    private val operatorRegex = Regexes.getOperators()
+internal class RegularExpression(override var expr: String) : BaseExpression(expr) {
+    private val operatorRegex = RegularRegexes.getOperators()
 
     init {
         expr = expr.replace(" ", "")
     }
-
-    override val isNotNumber: Boolean
-        get() = expr.toDoubleOrNull() == null
 
 
     /**
@@ -21,8 +22,8 @@ internal class RegularExpression(private var expr: String) : Expression {
      * @return simplified part of expression
      */
     override fun simplifyExpression(): String {
-        val bracketsRegex = Regexes.bracket
-        val bracketsWithUnaryRegex = Regexes.bracketWithUnary
+        val bracketsRegex = RegularRegexes.bracket
+        val bracketsWithUnaryRegex = RegularRegexes.bracketWithUnary
         val bracketsMatchResult = bracketsRegex.find(expr)
 
         val bracketsWithUnaryMatchResult = bracketsWithUnaryRegex.find(expr)
@@ -32,6 +33,16 @@ internal class RegularExpression(private var expr: String) : Expression {
             val startingFrom = bracketsWithUnaryMatchResult.range.first
             // If operators count = 1 -> remove brackets
             when (operatorRegex.findAll(value).count()) {
+                2 -> {
+                    val minusRegex = Regex("""(^|\+|\-|\*|\/)-(\d+\.\d+|\d+|\w\w|\w)""")
+                    if (minusRegex.find(value) != null) {
+                        expr = expr
+                            .removeRange(startingFrom + lastIndex, startingFrom + lastIndex + 1)
+                            .removeRange(startingFrom, startingFrom + firstIndex + 1)
+
+                        value = value.replace("[()]".toRegex(), "")
+                    }
+                }
                 1 -> {
                     expr = expr
                         .removeRange(startingFrom + lastIndex, startingFrom + lastIndex + 1)
@@ -48,8 +59,8 @@ internal class RegularExpression(private var expr: String) : Expression {
                 }
             }
             val operator =
-                bracketsWithUnaryMatchResult.value.replace("""(\)|\(|\d|\.)""".toRegex(), "")
-            return simplifyExpressionWithoutBrackets(startingFrom, value) { Operators.calculate(operator, it) }
+                bracketsWithUnaryMatchResult.value.replace("""(\W|\d)""".toRegex(), "")
+            return simplifyExpressionWithoutBrackets(startingFrom, value) { RegularOperators.calculate(operator, it) }
         } else if (bracketsMatchResult != null) {
 
             var (value, firstIndex, lastIndex) = decomposeMatchResult(bracketsMatchResult)
@@ -111,8 +122,8 @@ internal class RegularExpression(private var expr: String) : Expression {
         exprWithoutBrackets: String,
         onPostCalculate: ((Double) -> Double)? = null
     ): String {
-        Operators.forEachIndexed { index, operator ->
-            val operatorRegex = Regexes.getOperator(operator)
+        RegularOperators.forEachIndexed { index, operator ->
+            val operatorRegex = RegularRegexes.getOperator(operator)
             operatorRegex.find(exprWithoutBrackets)?.let { matchResult ->
                 val value = matchResult.value
                 simplifyBinaryExpression(position, value, index, operator, onPostCalculate)
@@ -149,9 +160,9 @@ internal class RegularExpression(private var expr: String) : Expression {
         operator: String,
         onPostCalculate: ((Double) -> Double)? = null
     ) {
-        val (firstNumber, secondNumber) = expression.split(Operators.pureBinaryOperators[operatorIndexInOperators])
+        val (firstNumber, secondNumber) = expression.split(RegularOperators.pureBinaryOperators[operatorIndexInOperators])
             .map { it.operandToDouble() }
-        val temporaryResult = Operators.calculate(operator, firstNumber, secondNumber)
+        val temporaryResult = RegularOperators.calculate(operator, firstNumber, secondNumber)
         expr = expr.replaceFirst(
             expression,
             (onPostCalculate?.invoke(temporaryResult) ?: temporaryResult).toString(),

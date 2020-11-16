@@ -1,7 +1,9 @@
 package utils
 
-import ConstantNotFoundException
+import exceptions.ConstantNotFoundException
 import Constants
+import Expression
+import regular.RegularExpression
 
 /**
  * Utility function that turn operand to double even if it constant, else throws exception
@@ -23,3 +25,6 @@ fun String.replaceFirst(oldValue: String, newValue: String, startingFrom: Int): 
     val firstPartOfString = substring(0, startingFrom)
     return firstPartOfString + secondPartOfString.replaceFirst(oldValue, newValue)
 }
+
+val String.toExpression: Expression
+    get() = RegularExpression(this)

@@ -1,3 +1,6 @@
+import regular.RegularExpression
+import regular.RegularRegexes
+
 class ParameterCalculator(calculationCallback: ((String) -> Unit)? = null,
                           exceptionCallback: ((Exception) -> Unit)? = null
 ) {
@@ -8,14 +11,14 @@ class ParameterCalculator(calculationCallback: ((String) -> Unit)? = null,
         parameters.forEach {map ->
             var expression = expr
             map.forEach { (key, item) ->
-                val parameterRegex = Regexes.getParameter(key)
+                val parameterRegex = RegularRegexes.getParameter(key)
                 expression = expression.replace(parameterRegex) { matchResult ->
                     val value = matchResult.value
                     val index = value.indexOf(key)
                     value.replaceRange(index, index+1, item.toString())
                 }
             }
-            results.add(calculator.calculate(expression))
+            results.add(calculator.calculate(RegularExpression(expression)))
         }
         return results
     }
