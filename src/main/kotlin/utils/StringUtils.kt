@@ -3,6 +3,8 @@ package utils
 import exceptions.ConstantNotFoundException
 import Constants
 import Expression
+import boolean.BooleanExpression
+import matrix.MatrixExpression
 import regular.RegularExpression
 
 /**
@@ -12,6 +14,14 @@ import regular.RegularExpression
 fun String.operandToDouble(): Double {
     val result = toDoubleOrNull()
     return result ?: Constants[this] ?: throw ConstantNotFoundException()
+}
+
+fun String.toMatrix(): Array<DoubleArray> {
+    return replace(Regex("""[\[\]]"""), "")
+        .split(";").map { doubles ->
+            doubles.split(" ").mapNotNull { it.toDoubleOrNull() }.toDoubleArray()
+//                .also { println(it.count()) }
+        }.toTypedArray()
 }
 
 val String.isOperandOrDouble: Boolean
@@ -27,4 +37,10 @@ fun String.replaceFirst(oldValue: String, newValue: String, startingFrom: Int): 
 }
 
 val String.toExpression: Expression
-    get() = RegularExpression(this)
+    get() {
+        return when {
+            this.contains("""[\[\]]""".toRegex()) -> MatrixExpression(this)
+            this.contains("""[\\/!]""".toRegex()) -> BooleanExpression(this)
+            else -> RegularExpression(this)
+        }
+    }

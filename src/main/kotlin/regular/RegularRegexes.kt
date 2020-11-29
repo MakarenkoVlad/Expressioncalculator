@@ -1,9 +1,11 @@
 package regular
 
 object RegularRegexes {
+    val minusRegex = Regex("""(^|\+|\-|\*|\/)-(\d+\.\d+|\d+|\w\w|\w)""")
+
     /**
-    * Regex which could find bracket with biggest priority
-    */
+     * Regex which could find bracket with biggest priority
+     */
     val bracket = Regex("""\([^\(^\)]+\)""")
     val bracketWithUnary = Regex("""\w+\([^\(^\)]+\)""")
 

@@ -2,6 +2,7 @@ package regular
 
 import BaseExpression
 import exceptions.ExpressionIsNotSimplifiedException
+import utils.decomposeMatchResult
 import utils.isOperandOrDouble
 import utils.operandToDouble
 import utils.replaceFirst
@@ -29,7 +30,7 @@ internal class RegularExpression(override var expr: String) : BaseExpression(exp
         val bracketsWithUnaryMatchResult = bracketsWithUnaryRegex.find(expr)
         if (bracketsWithUnaryMatchResult != null) {
             val matchResult = bracketsRegex.find(bracketsWithUnaryMatchResult.value)!!
-            var (value, firstIndex, lastIndex) = decomposeMatchResult(matchResult)
+            var (value, firstIndex, lastIndex) = matchResult.decomposeMatchResult()
             val startingFrom = bracketsWithUnaryMatchResult.range.first
             // If operators count = 1 -> remove brackets
             when (operatorRegex.findAll(value).count()) {
@@ -63,7 +64,7 @@ internal class RegularExpression(override var expr: String) : BaseExpression(exp
             return simplifyExpressionWithoutBrackets(startingFrom, value) { RegularOperators.calculate(operator, it) }
         } else if (bracketsMatchResult != null) {
 
-            var (value, firstIndex, lastIndex) = decomposeMatchResult(bracketsMatchResult)
+            var (value, firstIndex, lastIndex) = bracketsMatchResult.decomposeMatchResult()
 
             // If operators count < 1 -> remove brackets
             when (operatorRegex.findAll(value).count()) {
@@ -101,13 +102,6 @@ internal class RegularExpression(override var expr: String) : BaseExpression(exp
         } else {
             return simplifyExpressionWithoutBrackets(0, expr)
         }
-    }
-
-    /**
-     * @return first is value, second is first index, third is last index
-     */
-    private fun decomposeMatchResult(matchResult: MatchResult): Triple<String, Int, Int> {
-        return Triple(matchResult.value, matchResult.range.first, matchResult.range.last)
     }
 
     /**
@@ -168,9 +162,5 @@ internal class RegularExpression(override var expr: String) : BaseExpression(exp
             (onPostCalculate?.invoke(temporaryResult) ?: temporaryResult).toString(),
             position
         )
-    }
-
-    override fun toString(): String {
-        return expr
     }
 }

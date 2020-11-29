@@ -10,7 +10,7 @@ interface Expression {
     fun simplifyExpression(): String
 
     /**
-     * Tells you is that expression is number
+     * Tells you is that expression is expression
      */
     val isExpression: Boolean
 }
