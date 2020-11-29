@@ -1,0 +1,199 @@
+## Коли я працював над цією лабою я був натхненний ідеями ООП та старався дотримуватися них,    через це вибрав не найкращий шлях до розв'язання цієї лаби.
+
+### Calculator 
+><p>Загальна ідея роботи полягала у тому що в нас є клас [Calculator](src/main/kotlin/Calculator.kt), котрий може обраховувати будь-який вираз.</p>
+
+```kotlin
+/**
+ * Calculates given expression
+ * @throws ExpressionIsNotSimplifiedException thrown exception if [exceptionCallback] is null
+ * @throws OperatorNotFoundException thrown exception if [exceptionCallback] is null
+ */
+open class Calculator(
+    protected val calculationCallback: ((expr: String) -> Unit)? = null,
+    protected val exceptionCallback: ((exception: Exception) -> Unit)? = null
+) {
+
+    /**
+     * Calculates given expression.
+     * Sends intermediate results to [calculationCallback].
+     * Can throw exception if [exceptionCallback] is null
+     * @param expr expression to calculate
+     * @throws ExpressionIsNotSimplifiedException
+     * @throws OperatorNotFoundException
+     */
+    fun calculate(expr: Expression): String {
+        return try {
+            while (expr.isExpression) {
+                expr.simplifyExpression()
+                calculationCallback?.invoke(expr.toString())
+            }
+
+            expr.toString()
+        } catch (e: Exception) {
+
+            if (exceptionCallback == null) {
+                throw when (e) {
+                    is ExpressionIsNotSimplifiedException -> e
+                    is OperatorNotFoundException -> e
+                    else -> e
+                }
+            } else {
+                exceptionCallback.invoke(e)
+                ""
+            }
+        }
+    }
+}
+```
+
+
+### [Expression](src/main/kotlin/Expression.kt) 
+<p>Для цього ми маємо також інтерфейс, котрий реалізовує властивість <i>isExpression</i> що повертає булеан того чи є вираз <i>виразом(не результатом)</i> та функцію <i>simplifyExpression</i>, що спрощує або обраховує найпріорітенішу пару або одиницю операнду</p>
+
+```kotlin
+ /**
+  * @throws OperatorNotFoundException
+  * @throws ExpressionIsNotSimplifiedException
+  */
+ interface Expression {
+ 
+     /**
+      * Simplifies the expression by calculating the most priority operation
+      */
+     fun simplifyExpression(): String
+ 
+     /**
+      * Tells you is that expression is expression
+      */
+     val isExpression: Boolean
+ }
+ 
+
+```
+#### [BaseExpression](src/main/kotlin/BaseExpression.kt)
+><p>Потім я створив основний клас для виразів , який перезаписує метод <i>toString()</i> та <i>isExpression</i> і також він створює базовий для усіх конструктор який має <i>String'ову</i> властивість</p>
+
+```kotlin
+abstract class BaseExpression(protected open var expr: String): Expression {
+    abstract override fun simplifyExpression(): String
+
+    override val isExpression: Boolean
+        get() = expr.toDoubleOrNull() == null
+
+    override fun toString(): String {
+        return expr
+    }
+}
+```
+#### Потім потрібно було створити такі класи
+* [RegularExpression](src/main/kotlin/regular/RegularExpression.kt)
+* [BooleanExpression](src/main/kotlin/boolean/BooleanExpression.kt)
+* [MatrixExpression](src/main/kotlin/matrix/MatrixExpression.kt)
+
+
+>##### [RegularExpression](src/main/kotlin/regular/RegularExpression.kt)
+>><p>
+>>    Клас котрий 
+>>    дозволює спрощувати
+>>     звичайні вирази 
+>>     типу: 1+2\*3-pi*sin(pi/2), 1231231\*(3000)+(e\*30)\*(10\/2) 
+>></p>
+\>\>  [Демонстрація](src/main/kotlin/RegularExpressionTest.kt) 
+>
+>
+>##### [BooleanExpression](src/main/kotlin/boolean/BooleanExpression.kt)
+>><p>
+>>    Клас котрий 
+>>    дозволює спрощувати
+>>     булеанові вирази 
+>></p>
+\>\>  [Демонстрація](src/main/kotlin/BooleanExpressionTest.kt) 
+>
+>##### [MatrixExpression](src/main/kotlin/matrix/MatrixExpression.kt)
+>><p>
+>>    Клас котрий 
+>>    дозволює спрощувати
+>>     матричні вирази 
+>></p>
+\>\>  [Демонстрація](src/main/kotlin/MatrixExpressionTest.kt) 
+
+### [ParameterCalculator](src/main/kotlin/ParameterCalculator.kt)
+> Для обчислення параметричних виразів було створено інший калькулятор, бо сигнатури виразів відрізнялися
+```kotlin
+/**
+ * Allows calculate parametric expression with 'a' and 'b' parameter
+ * @throws ExpressionIsNotSimplifiedException thrown exception if [exceptionCallback] is null
+ * @throws OperatorNotFoundException thrown exception if [exceptionCallback] is null
+ */
+class ParameterCalculator(
+    calculationCallback: ((String) -> Unit)? = null,
+    exceptionCallback: ((Exception) -> Unit)? = null
+) {
+    private val calculator = Calculator(calculationCallback, exceptionCallback)
+
+    /**
+     * Replaces a, b in expressions with [parameters] and calculates that expressions
+     * @throws ExpressionIsNotSimplifiedException thrown exception if [exceptionCallback] is null
+     * @throws OperatorNotFoundException thrown exception if [exceptionCallback] is null
+     */
+    fun calculate(expr: String, parameters: List<Map<String, Double>>): List<String> {
+        val results = mutableListOf<String>()
+        parameters.forEach { map ->
+            var expression = expr
+            map.forEach { (key, item) ->
+                val parameterRegex = RegularRegexes.getParameter(key)
+                expression = expression.replace(parameterRegex) { matchResult ->
+                    val value = matchResult.value
+                    val index = value.indexOf(key)
+                    value.replaceRange(index, index + 1, item.toString())
+                }
+            }
+            results.add(calculator.calculate(RegularExpression(expression)))
+        }
+        return results
+    }
+}
+```
+>> як бачите ми все ще користуємося нашим старим калькулятором
+\>\> [Демонстрація](src/main/kotlin/ParameterExpressionTest.kt)
+
+### [Kotlin extensions](https://kotlinlang.org/docs/reference/extensions.html)
+> саме цікаве на мій погляд це було створення екстеншенів
+```kotlin
+val String.toExpression: Expression
+    get() {
+        return when {
+            this.contains("""[\[\]]""".toRegex()) -> MatrixExpression(this)
+            this.contains("""[\\/!]""".toRegex()) -> BooleanExpression(this)
+            else -> RegularExpression(this)
+        }
+    }
+```
+>> функція котра зі строки робить потрібний нам вираз
+```kotlin
+fun String.toMatrix(): Array<DoubleArray> {
+    return replace(Regex("""[\[\]]"""), "")
+        .split(";").map { doubles ->
+            doubles.split(" ").mapNotNull { it.toDoubleOrNull() }.toDoubleArray()
+        }.toTypedArray()
+}
+```
+>> функція котра дозвоняє нам перетворити строковий вираз у матрицю
+```kotlin
+fun Array<DoubleArray>.toMatrixString(): String {
+    val builder = StringBuilder("[")
+    builder.append(firstOrNull()?.rowToString()?:"")
+    for (i in 1 until count()) builder.append("; ${getOrNull(i)?.rowToString()?:""}")
+    builder.append("]")
+    return builder.toString()
+}
+
+fun DoubleArray.rowToString(): String {
+    val builder = StringBuilder()
+    builder.append("${firstOrNull()?:""} ")
+    for (i in 1 until count()) builder.append(" ${getOrNull(i)?:""} ")
+    return builder.toString()
+}
+```
+>> функція котрі дозволяють перетворити матрицю в строку
