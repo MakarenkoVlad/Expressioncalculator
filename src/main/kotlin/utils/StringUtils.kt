@@ -20,7 +20,6 @@ fun String.toMatrix(): Array<DoubleArray> {
     return replace(Regex("""[\[\]]"""), "")
         .split(";").map { doubles ->
             doubles.split(" ").mapNotNull { it.toDoubleOrNull() }.toDoubleArray()
-//                .also { println(it.count()) }
         }.toTypedArray()
 }
 
